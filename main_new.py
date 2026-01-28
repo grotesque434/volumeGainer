@@ -45,6 +45,8 @@ def get_worst_price_pacifica():
     hype_data = next(
         (item for item in data.get("data", []) if item.get("symbol") == "HYPE"), None
     )
+    if not hype_data:
+        return None
     return hype_data["mark"]
 
 
@@ -222,9 +224,10 @@ def get_orders_pacifica():
     )
 
     data = response.json()
+    if not data.get("data"):
+        return None
     order = data["data"][0]
-    cl_id = order["client_order_id"]
-    return cl_id
+    return order.get("client_order_id")
 
 
 def get_orders_history_pacifica():
@@ -240,18 +243,16 @@ def get_orders_history_pacifica():
     dataFee = []
     dataSize = []
     dataPnL = []
-    s = 0
 
-    for i in data:
-        dataID.append(data["data"][0]["order_id"])
-        dataSymbol.append(data["data"][0]["symbol"])
-        dataSide.append(data["data"][0]["side"])
-        dataPrice.append(data["data"][0]["price"])
-        dataEntPrice.append(data["data"][0]["entry_price"])
-        dataPnL.append(data["data"][0]["pnl"])
-        dataFee.append(data["data"][0]["fee"])
-        dataSize.append(data["data"][0]["amount"])
-        s += 1
+    for i in data.get("data", []):
+        dataID.append(i.get("order_id"))
+        dataSymbol.append(i.get("symbol"))
+        dataSide.append(i.get("side"))
+        dataPrice.append(i.get("price"))
+        dataEntPrice.append(i.get("entry_price"))
+        dataPnL.append(i.get("pnl"))
+        dataFee.append(i.get("fee"))
+        dataSize.append(i.get("amount"))
 
     with open("dataPacifica.csv", "w") as csvfile:
         writer = csv.writer(csvfile)
@@ -282,7 +283,9 @@ def get_positions_pacifica_entry():
     )
 
     data = response.json()
-    return data["data"][0]["entry_price"]
+    if not data.get("data"):
+        return None
+    return data["data"][0].get("entry_price")
 
 
 def get_positions_pacifica_size():
@@ -292,7 +295,9 @@ def get_positions_pacifica_size():
     )
 
     data = response.json()
-    return data["data"][0]["amount"]
+    if not data.get("data"):
+        return None
+    return data["data"][0].get("amount")
 
 
 def get_orders_pacifica_coin():
@@ -302,10 +307,10 @@ def get_orders_pacifica_coin():
     )
 
     data = response.json()
+    if not data.get("data"):
+        return None
     order = data["data"][0]
-    side = order["side"]
-
-    return side
+    return order.get("side")
 
 
 def get_orders_pacifica_logic():
@@ -442,7 +447,8 @@ def order_logic_test(agent_public_key, agent_private_key):
                     f"Ордер не прошел, так как ордер уже есть\nСписок ордеров:\n"
                     f"Pacifica: {get_orders_pacifica_logic()}"
                 )
-                cancel_order_pacifica(agent_public_key, agent_private_key, l_pr[-2])
+                bet = l_pr[-2] if len(l_pr) >= 2 else pr
+                cancel_order_pacifica(agent_public_key, agent_private_key, bet)
                 print("\nОтменена ордера на Pacifica")
             print(f"\nУспешных итераций: {countS} из {count}")
             count += 1
